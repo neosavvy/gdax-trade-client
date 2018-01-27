@@ -1,0 +1,23 @@
+{
+  "name": "gdax-trade-client",
+  "version": "1.0.0",
+  "description": "Trading Client for GDAX Trade Monitoring",
+  "main": "index.js",
+  "dependencies": {
+    "gdax": "^0.5.1"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/neosavvyinc/gdax-trade-client.git"
+  },
+  "author": "Adam Parrish",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/neosavvyinc/gdax-trade-client/issues"
+  },
+  "homepage": "https://github.com/neosavvyinc/gdax-trade-client#readme"
+}
