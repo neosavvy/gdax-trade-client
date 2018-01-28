@@ -8,13 +8,22 @@ const sandboxURI = 'https://api-public.sandbox.gdax.com';
 
 commander.version('0.1.0')
 	.option('-d --dry')
+
     .option('-f --auth-file [authFile]', 'Authentication File with key, secret and passphrase')
-	.option('-k --key [key]', 'Authentication Key from GDAX')
+
+    .option('-k --key [key]', 'Authentication Key from GDAX')
 	.option('-s --secret [secret]', 'Authentication Secret from GDAX')
 	.option('-p --passphrase [passphrase]', 'Authentication Passphrase from GDAX')
-    .option('-l --list <type>', 'List By Object Type', /^(coinbase-accounts|orders|products)$/i, 'orders')
-    .option('-w --ws-listen-prices')
 
+    .option('-l --list <type>',
+        'List By Object Type',
+        /^(coinbase-accounts|orders|products)$/i,
+        'orders')
+
+    // .option('-w --ws-listen-prices <product>',
+    //     'Listen to Prices for Currency Pair',
+    //     /^(BTC-USD|BCH-USD|ETC-USD|LTC-USD)$/,
+    //     'BTC-USD')
 	.parse(process.argv);
 
 function login() {
