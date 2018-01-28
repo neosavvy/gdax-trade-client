@@ -30,17 +30,13 @@ async function listOrders( client ) {
 }
 
 
-function listenPrices(key, secret, passphrase, maxTicks = 10) {
+function listenPrices(auth, product, maxTicks = 10) {
     let count = 0;
 
     const websocket = new Gdax.WebsocketClient(
-        ['BTC-USD'],
+        [product],
         'wss://ws-feed.gdax.com',
-        {
-            key,
-            secret,
-            passphrase
-        },
+        auth,
         {
             channels: ['ticker']
         }
