@@ -4,7 +4,9 @@
   "description": "Trading Client for GDAX Trade Monitoring",
   "main": "index.js",
   "dependencies": {
-    "gdax": "^0.5.1"
+    "commander": "^2.13.0",
+    "gdax": "^0.5.1",
+    "lodash": "^4.17.4"
   },
   "devDependencies": {},
   "scripts": {
