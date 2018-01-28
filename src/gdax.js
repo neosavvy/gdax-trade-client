@@ -61,9 +61,51 @@ function listenPrices(auth, product, maxTicks = 10) {
     });
 }
 
+async function cancelAllOrders(client) {
+    try {
+        const cancelled = await client.cancelAllOrders();
+        _.map(cancelled, (c) => console.log(JSON.stringify(c, null, 4)));
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+async function cancelForProduct(client, product) {
+    try {
+        const cancelled = await client.cancelAllOrders({ product_id: product });
+        _.map(cancelled, (c) => console.log(JSON.stringify(c, null, 4)));
+    } catch (error) {
+        console.log(error);
+    }
+}
+
+async function placeOrderWrapper(client, product, amount, limitPrice, side) {
+    const params = {
+        side: side,
+        price: limitPrice, // USD
+        size: amount, // BTC, BCH, ETH, LTC
+        product_id: product,
+        post_only: true
+    };
+    const orderConfirmation = await client.placeOrder(params);
+    console.log(JSON.stringify(orderConfirmation, null, 4));
+}
+
+async function buyLimit(client, product, amount, limitPrice) {
+    placeOrderWrapper(client, product, amount, limitPrice, 'buy')
+}
+
+async function sellLimit(client, product, amount, limitPrice) {
+    placeOrderWrapper(client, product, amount, limitPrice, 'sell')
+}
+
 module.exports = {
     listProducts,
     listCoinbaseAccounts,
     listOrders,
-    listenPrices
+    listenPrices,
+    cancelAllOrders,
+    cancelForProduct,
+    buyLimit,
+    sellLimit,
 };
