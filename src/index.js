@@ -12,9 +12,7 @@ commander.version('0.1.0')
 	.option('-k --key [key]', 'Authentication Key from GDAX')
 	.option('-s --secret [secret]', 'Authentication Secret from GDAX')
 	.option('-p --passphrase [passphrase]', 'Authentication Passphrase from GDAX')
-    .option('-lo --list-orders')
-    .option('-lca --list-coinbase-accounts')
-    .option('-lp --list-products')
+    .option('-l --list <type>', 'List By Object Type', /^(coinbase-accounts|orders|products)$/i, 'orders')
     .option('-w --ws-listen-prices')
 
 	.parse(process.argv);
@@ -51,17 +49,22 @@ function login() {
 
 const authedClient = login();
 
-if(commander.listOrders) {
-    gdax.listOrders(authedClient);
+if(commander.list) {
+    switch (commander.list) {
+        case "coinbase-accounts":
+            gdax.listCoinbaseAccounts(authedClient)
+            break;
+        case "orders":
+            gdax.listOrders(authedClient);
+            break;
+
+        case "products":
+            gdax.listProducts(authedClient);
+            break;
+    }
+
 }
 
-if(commander.listProducts) {
-    gdax.listProducts(authedClient);
-}
-
-if(commander.listCoinbaseAccounts) {
-    gdax.listCoinbaseAccounts(authedClient)
-}
 
 if(commander.wsListenPrices) {
     gdax.listenPrices(
