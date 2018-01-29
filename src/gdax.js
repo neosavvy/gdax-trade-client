@@ -1,36 +1,62 @@
 const Gdax = require('gdax');
 const publicClient = new Gdax.PublicClient();
 const _ = require('lodash');
+const Table = require('easy-table');
 
-async function listProducts() {
+function output(mode, data) {
+    if(!data || _.isEmpty(data)) {
+        return;
+    }
+    if(mode === 'json') {
+        _.forEach(data, (d) => console.log(JSON.stringify(d, null, 4)));
+    } else {
+        const t = new Table();
+        _.forEach(data, (d) => {
+            const keys = _.keys(d);
+            _.forEach(keys, (k) => t.cell(k, d[k]));
+            t.newRow();
+        });
+        console.log(t.toString());
+    }
+}
+
+async function listProducts(client, mode = 'json') {
     try {
-        const products = await publicClient.getProducts();
-        _.map(products, (p) => console.log(JSON.stringify(p, null, 4)));
+        const products = await client.getProducts();
+        output(mode, products);
     } catch (error) {
         console.log(error)
     }
 }
 
-async function listCoinbaseAccounts( client ) {
+async function listCoinbaseAccounts(client, mode = 'json') {
     try {
         const accounts = await client.getCoinbaseAccounts();
-        _.map(accounts, (a) => console.log(JSON.stringify(a, null, 4)));
+        output(mode, accounts);
     } catch (error) {
         console.log(error);
     }
 }
 
-async function listOrders( client ) {
+async function listGdaxAccounts(client, mode = 'json') {
+    try {
+        const accounts = await client.getAccounts();
+        output(mode, accounts);
+    } catch (error) {
+        console.log(error);
+    }
+}
+async function listOrders(client, mode = 'json') {
     try {
         const orders = await client.getOrders();
-        _.map(orders, (o) => console.log(JSON.stringify(o, null, 4)));
+        output(mode, orders);
     } catch (error) {
         console.log(error)
     }
 }
 
 
-function listenPrices(auth, product, maxTicks = 10) {
+function listenPrices(auth, product, maxTicks = 10, mode = 'json') {
     let count = 0;
 
     const websocket = new Gdax.WebsocketClient(
@@ -45,7 +71,7 @@ function listenPrices(auth, product, maxTicks = 10) {
     websocket.on('message', data => {
         if(data.type === 'ticker') {
             count = count + 1;
-            console.log(data);
+            output(mode, data)
             if( count === maxTicks ) {
                 process.exit();
             }
@@ -61,25 +87,25 @@ function listenPrices(auth, product, maxTicks = 10) {
     });
 }
 
-async function cancelAllOrders(client) {
+async function cancelAllOrders(client, mode = 'json') {
     try {
         const cancelled = await client.cancelAllOrders();
-        _.map(cancelled, (c) => console.log(JSON.stringify(c, null, 4)));
+        output(mode, cancelled);
     } catch (error) {
         console.log(error);
     }
 }
 
-async function cancelForProduct(client, product) {
+async function cancelForProduct(client, product, mode = 'json') {
     try {
         const cancelled = await client.cancelAllOrders({ product_id: product });
-        _.map(cancelled, (c) => console.log(JSON.stringify(c, null, 4)));
+        output(mode, cancelled);
     } catch (error) {
         console.log(error);
     }
 }
 
-async function placeOrderWrapper(client, product, amount, limitPrice, side) {
+async function placeOrderWrapper(client, product, amount, limitPrice, side, mode = 'json') {
     const params = {
         side: side,
         price: limitPrice, // USD
@@ -88,20 +114,22 @@ async function placeOrderWrapper(client, product, amount, limitPrice, side) {
         post_only: true
     };
     const orderConfirmation = await client.placeOrder(params);
-    console.log(JSON.stringify(orderConfirmation, null, 4));
+    output(mode, orderConfirmation);
+    return orderConfirmation;
 }
 
-async function buyLimit(client, product, amount, limitPrice) {
-    placeOrderWrapper(client, product, amount, limitPrice, 'buy')
+async function buyLimit(client, product, amount, limitPrice, mode = 'json') {
+    return placeOrderWrapper(client, product, amount, limitPrice, 'buy', mode)
 }
 
-async function sellLimit(client, product, amount, limitPrice) {
-    placeOrderWrapper(client, product, amount, limitPrice, 'sell')
+async function sellLimit(client, product, amount, limitPrice, mode = 'json') {
+    return placeOrderWrapper(client, product, amount, limitPrice, 'sell', mode)
 }
 
 module.exports = {
     listProducts,
     listCoinbaseAccounts,
+    listGdaxAccounts,
     listOrders,
     listenPrices,
     cancelAllOrders,

@@ -29,7 +29,7 @@ commander.version('0.1.0')
      */
     .option('-l --list <type>',
         'List By Object Type',
-        /^(coinbase-accounts|orders|products)$/i)
+        /^(coinbase-accounts|orders|products|gdax-accounts)$/i)
 
     /**
      * In Flight Order Management
@@ -75,6 +75,16 @@ function determineURI() {
     return commander.real ? apiURI : sandboxURI;
 }
 
+function determineOutputMode() {
+    if(commander.table) {
+        return 'table';
+    } else if ( commander.json ) {
+        return 'json';
+    } else {
+        return 'json';
+    }
+}
+
 function getAuthenticatedClient() {
     const credentials = getCredentials();
     if(credentials.key && credentials.secret && credentials.passphrase) {
@@ -108,6 +118,12 @@ function getCredentials() {
             commander.help();
             process.exit(1);
         }
+    } else {
+        return {
+            "key": null,
+            "secret": null,
+            "passphrase": null
+        }
     }
 }
 
@@ -115,14 +131,17 @@ const authedClient = getAuthenticatedClient();
 if(commander.list) {
     switch (commander.list) {
         case "coinbase-accounts":
-            gdax.listCoinbaseAccounts(authedClient);
+            gdax.listCoinbaseAccounts(authedClient, determineOutputMode());
+            break;
+        case "gdax-accounts":
+            gdax.listGdaxAccounts(authedClient, determineOutputMode());
             break;
         case "orders":
-            gdax.listOrders(authedClient);
+            gdax.listOrders(authedClient, determineOutputMode());
             break;
 
         case "products":
-            gdax.listProducts(authedClient);
+            gdax.listProducts(authedClient, determineOutputMode());
             break;
     }
 }
@@ -132,13 +151,13 @@ if(commander.cancel) {
     let currencyPair = commander.cancel;
     switch(currencyPair) {
         case "ALL":
-            gdax.cancelAllOrders(authedClient);
+            gdax.cancelAllOrders(authedClient, determineOutputMode());
             break;
         case "BTC-USD":
         case "BCH-USD":
         case "ETH-USD":
         case "LTC-USD":
-            gdax.cancelForProduct(authedClient, currencyPair);
+            gdax.cancelForProduct(authedClient, currencyPair, determineOutputMode());
             break;
         default:
             console.log("Please provide a selection");
@@ -149,11 +168,21 @@ if(commander.cancel) {
 }
 
 if(commander.buyLimit) {
-    gdax.buyLimit(authedClient, commander.buyLimit, commander.amount, commander.limitPrice)
+    gdax.buyLimit(
+        authedClient,
+        commander.buyLimit,
+        commander.amount,
+        commander.limitPrice,
+        determineOutputMode())
 }
 
 if(commander.sellLimit) {
-    gdax.sellLimit(authedClient, commander.sellLimit, commander.amount, commander.limitPrice)
+    gdax.sellLimit(
+        authedClient,
+        commander.sellLimit,
+        commander.amount,
+        commander.limitPrice,
+        determineOutputMode())
 }
 
 if(commander.daemon) {
@@ -163,6 +192,7 @@ if(commander.daemon) {
     gdax.listenPrices(
         credentials,
         selectedProduct,
-        ticks
+        ticks,
+        determineOutputMode()
     );
 }
