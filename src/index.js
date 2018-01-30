@@ -1,7 +1,10 @@
+#!/usr/bin/env node
+
 const commander = require('commander');
 const fs = require('fs');
 const gdax = require('./gdax');
 const Gdax = require('gdax');
+const ExtendedClient = require('./authenticated');
 
 const apiURI = 'https://api.gdax.com';
 const sandboxURI = 'https://api-public.sandbox.gdax.com';
@@ -29,7 +32,7 @@ commander.version('0.1.0')
      */
     .option('-l --list <type>',
         'List By Object Type',
-        /^(coinbase-accounts|orders|products|gdax-accounts)$/i)
+        /^(coinbase-accounts|orders|products|gdax-accounts|positions)$/i)
 
     /**
      * In Flight Order Management
@@ -88,7 +91,7 @@ function determineOutputMode() {
 function getAuthenticatedClient() {
     const credentials = getCredentials();
     if(credentials.key && credentials.secret && credentials.passphrase) {
-        return new Gdax.AuthenticatedClient(
+        return new ExtendedClient(
             credentials.key,
             credentials.secret,
             credentials.passphrase,
@@ -139,9 +142,11 @@ if(commander.list) {
         case "orders":
             gdax.listOrders(authedClient, determineOutputMode());
             break;
-
         case "products":
             gdax.listProducts(authedClient, determineOutputMode());
+            break;
+        case "positions":
+            gdax.listPositions(authedClient, determineOutputMode());
             break;
     }
 }

@@ -126,6 +126,18 @@ async function sellLimit(client, product, amount, limitPrice, mode = 'json') {
     return placeOrderWrapper(client, product, amount, limitPrice, 'sell', mode)
 }
 
+async function listPositions(client, mode = 'json') {
+    const positions = await client.listPositions();
+    console.log(positions);
+    output(mode, positions.accounts);
+}
+
+async function listHolds(client, mode = 'json') {
+    const positions = await client.listPositions();
+    console.log(positions);
+    output(mode, positions.accounts);
+}
+
 module.exports = {
     listProducts,
     listCoinbaseAccounts,
@@ -136,4 +148,5 @@ module.exports = {
     cancelForProduct,
     buyLimit,
     sellLimit,
+    listPositions,
 };
