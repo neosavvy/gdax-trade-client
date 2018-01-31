@@ -5,7 +5,7 @@ const Aigle = require('aigle');
 Aigle.mixin(_);
 const Table = require('easy-table');
 
-function output(mode, data) {
+function output(mode, data, sumColumn) {
     if(!data || _.isEmpty(data)) {
         return;
     }
@@ -18,6 +18,8 @@ function output(mode, data) {
             _.forEach(keys, (k) => {
                 if( d[k] === "string" ) {
                     t.cell(k, d[k])
+                } else if( typeof d[k] === "number") {
+                    t.cell(k, d[k], Table.number(4));
                 } else {
                     const str = JSON.stringify(d[k]);
                     t.cell(k, str);
@@ -25,6 +27,11 @@ function output(mode, data) {
             });
             t.newRow();
         });
+
+        if(sumColumn) {
+            t.total(sumColumn);
+        }
+
         console.log(t.toString());
     }
 }
@@ -50,7 +57,17 @@ async function listCoinbaseAccounts(client, mode = 'json') {
 async function listGdaxAccounts(client, mode = 'json') {
     try {
         const accounts = await client.getAccounts();
-        output(mode, accounts);
+        const accountsWithUSDValues = await Aigle.map(accounts, async (a) => {
+            if( a.currency !== 'USD' ) {
+                const ticker = await client.getProductTicker(`${a.currency}-USD`);
+                const nonUsdResult = _.merge({}, a, {dollarValue: Number(a.available) * Number(ticker.price)});
+                return nonUsdResult
+            } else {
+                const usdResult = _.merge({}, a, {dollarValue: Number(a.available)});
+                return usdResult;
+            }
+        });
+        output(mode, accountsWithUSDValues, "dollarValue");
     } catch (error) {
         console.log(error);
     }
