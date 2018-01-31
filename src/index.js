@@ -53,6 +53,12 @@ commander.version('0.1.0')
     .option('--amount <amt>',
         'Amount of Currency to Buy or Sell',
         parseFloat)
+    .option('--buy-source-amount <amt>',
+        'Amount of Currency to Buy in Source Currency',
+        parseFloat)
+    .option('--sell-source-amount <amt>',
+        'Amount of Currency to Sell in Source Currency',
+        parseFloat)
     .option('--limit-price <lmtPrice>',
         'Limit Price when Buying or Selling of a whole Unit',
         parseFloat)
@@ -176,21 +182,66 @@ if(commander.cancel) {
 }
 
 if(commander.buyLimit) {
-    gdax.buyLimit(
-        authedClient,
-        commander.buyLimit,
-        commander.amount,
-        commander.limitPrice,
-        determineOutputMode())
+    console.log("buying...");
+    if(commander.buySourceAmount) {
+        const calculatedAmount = Number(commander.buySourceAmount / commander.limitPrice).toFixed(5);
+        console.log("Submitting a BUY order for");
+        console.log("Currency:    ", commander.buyLimit);
+        console.log("Amount:      ", calculatedAmount);
+        console.log("Limit Price: ", commander.limitPrice);
+        console.log("Cost:        ", calculatedAmount * commander.limitPrice);
+
+        gdax.buyLimit(
+            authedClient,
+            commander.buyLimit,
+            calculatedAmount,
+            commander.limitPrice,
+            determineOutputMode())
+    } else {
+        console.log("Submitting a BUY order for");
+        console.log("Currency:    ", commander.buyLimit);
+        console.log("Amount:      ", commander.amount);
+        console.log("Limit Price: ", commander.limitPrice);
+        console.log("Cost:        ", commander.amount * commander.limitPrice);
+
+        gdax.buyLimit(
+            authedClient,
+            commander.buyLimit,
+            commander.amount,
+            commander.limitPrice,
+            determineOutputMode())
+    }
 }
 
 if(commander.sellLimit) {
-    gdax.sellLimit(
-        authedClient,
-        commander.sellLimit,
-        commander.amount,
-        commander.limitPrice,
-        determineOutputMode())
+    if(commander.sellSourceAmount) {
+        const calculatedAmount = Number(commander.sellSourceAmount / commander.limitPrice).toFixed(5);
+        console.log("Submitting a SELL order for");
+        console.log("Currency:    ", commander.sellLimit);
+        console.log("Amount:      ", calculatedAmount);
+        console.log("Limit Price: ", commander.limitPrice);
+        console.log("Cost:        ", calculatedAmount * commander.limitPrice);
+
+        gdax.sellLimit(
+            authedClient,
+            commander.sellLimit,
+            calculatedAmount,
+            commander.limitPrice,
+            determineOutputMode());
+    } else {
+        console.log("Submitting a SELL order for");
+        console.log("Currency:    ", commander.sellLimit);
+        console.log("Amount:      ", commander.amount);
+        console.log("Limit Price: ", commander.limitPrice);
+        console.log("Cost:        ", commander.amount * commander.limitPrice);
+
+        gdax.sellLimit(
+            authedClient,
+            commander.sellLimit,
+            commander.amount,
+            commander.limitPrice,
+            determineOutputMode());
+    }
 }
 
 if(commander.daemon) {
