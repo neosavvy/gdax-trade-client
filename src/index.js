@@ -32,7 +32,7 @@ commander.version('0.1.0')
      */
     .option('-l --list <type>',
         'List By Object Type',
-        /^(coinbase-accounts|orders|products|gdax-accounts|positions)$/i)
+        /^(coinbase-accounts|orders|products|gdax-accounts|positions|cost-basis)$/i)
 
     /**
      * In Flight Order Management
@@ -147,6 +147,9 @@ if(commander.list) {
             break;
         case "positions":
             gdax.listPositions(authedClient, determineOutputMode());
+            break;
+        case "cost-basis":
+            gdax.listCostBasis(authedClient, determineOutputMode());
             break;
     }
 }

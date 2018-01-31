@@ -1,6 +1,8 @@
 const Gdax = require('gdax');
 const publicClient = new Gdax.PublicClient();
 const _ = require('lodash');
+const Aigle = require('aigle');
+Aigle.mixin(_);
 const Table = require('easy-table');
 
 function output(mode, data) {
@@ -13,7 +15,14 @@ function output(mode, data) {
         const t = new Table();
         _.forEach(data, (d) => {
             const keys = _.keys(d);
-            _.forEach(keys, (k) => t.cell(k, d[k]));
+            _.forEach(keys, (k) => {
+                if( d[k] === "string" ) {
+                    t.cell(k, d[k])
+                } else {
+                    const str = JSON.stringify(d[k]);
+                    t.cell(k, str);
+                }
+            });
             t.newRow();
         });
         console.log(t.toString());
@@ -132,10 +141,51 @@ async function listPositions(client, mode = 'json') {
     output(mode, positions.accounts);
 }
 
-async function listHolds(client, mode = 'json') {
-    const positions = await client.listPositions();
-    console.log(positions);
-    output(mode, positions.accounts);
+async function listCostBasis(client, mode = 'json') {
+    const accounts = await client.getAccounts();
+
+    // { currency: 'BTC', trades: [] }
+    const tradesByAccount = await Aigle.map(accounts, async (a) => {
+        const accountHistory = await client.getAccountHistory(a.id);
+
+        const trades = _.reduce(accountHistory, (acc, ah) => {
+            if(ah.type === 'match') {
+                acc = acc.concat(ah)
+            }
+            return acc;
+        }, []);
+        return { currency: a.currency, trades }
+    });
+
+    const usdInformation = _.find(tradesByAccount, {currency: "USD"});
+    const usdLookupInfo = _.map(usdInformation.trades, (t) => {
+        const info = {
+            tradeId: t.details.trade_id,
+            currencyPair: t.details.product_id,
+            usdAmount: t.amount,
+            orderType: t.amount > 0 ? 'sell' : 'buy'
+        };
+        return info;
+    });
+
+    _.forEach(tradesByAccount, (t) => {
+        if(t.currency !== 'USD'){
+
+            const tradesWithInfo = _.map(t.trades, (trade) => {
+                const usdAmount = _.find(usdLookupInfo, {tradeId: trade.details.trade_id}).usdAmount;
+                return {
+                    ...trade,
+                    usdCost: Math.abs(usdAmount),
+                    [`${_.toLower(t.currency)}Limit`]: Math.abs(usdAmount / Number(trade.amount))
+                }
+            });
+            const usdCosts = _.map(tradesWithInfo, (twi) => { return Number(twi.usdCost)});
+            const currencyAmounts =  _.map(tradesWithInfo, (twi) => { return Number(twi.amount)});
+            const costBasis = _.sum(usdCosts) / _.sum(currencyAmounts);
+            console.log(`Cost Basis for ${t.currency}: ${costBasis}`);
+            output(mode, tradesWithInfo);
+        }
+    });
 }
 
 module.exports = {
@@ -149,4 +199,5 @@ module.exports = {
     buyLimit,
     sellLimit,
     listPositions,
+    listCostBasis,
 };
