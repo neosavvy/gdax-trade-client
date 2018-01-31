@@ -2,6 +2,16 @@
 # yarn lockfile v1
 
 
+aigle-core@^1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/aigle-core/-/aigle-core-1.0.0.tgz#4066e0f9a5c60996d8377ed196a21fa17b6250ab"
+
+aigle@^1.10.1:
+  version "1.10.1"
+  resolved "https://registry.yarnpkg.com/aigle/-/aigle-1.10.1.tgz#d47971ef70cc90d4f7f0a50ccefebd86930b060e"
+  dependencies:
+    aigle-core "^1.0.0"
+
 ajv@^4.9.1:
   version "4.11.8"
   resolved "https://registry.yarnpkg.com/ajv/-/ajv-4.11.8.tgz#82ffb02b29e662ae53bdc20af15947706739c536"
