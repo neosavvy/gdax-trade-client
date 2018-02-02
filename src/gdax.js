@@ -54,17 +54,20 @@ async function listCoinbaseAccounts(client, mode = 'json') {
     }
 }
 
-async function listGdaxAccounts(client, mode = 'json') {
+async function listGdaxAccounts(client, mode = 'json', ignoreUsd = false) {
     try {
         const accounts = await client.getAccounts();
         const accountsWithUSDValues = await Aigle.map(accounts, async (a) => {
             if( a.currency !== 'USD' ) {
                 const ticker = await client.getProductTicker(`${a.currency}-USD`);
-                const nonUsdResult = _.merge({}, a, {dollarValue: Number(a.available) * Number(ticker.price)});
+                const nonUsdResult = _.merge({}, a, {dollarValue: Number(a.balance) * Number(ticker.price)});
                 return nonUsdResult
-            } else {
-                const usdResult = _.merge({}, a, {dollarValue: Number(a.available)});
+            } else if ( a.currency === 'USD' && !ignoreUsd) {
+                const usdResult = _.merge({}, a, {dollarValue: Number(a.balance)});
                 return usdResult;
+            } else {
+                const usdResult = _.merge({}, a, {dollarValue: 0});
+                return usdResult
             }
         });
         output(mode, accountsWithUSDValues, "dollarValue");
@@ -82,8 +85,18 @@ async function listOrders(client, mode = 'json') {
 }
 
 
-function listenPrices(auth, product, maxTicks = 10, mode = 'json') {
-    let count = 0;
+function executeTwoLegTrade(
+        auth,
+        client,
+        profit,
+        product,
+        entryTradeParams,
+        exitTradeParams) {
+
+    let buyOrderId;
+    let sellOrderId;
+    let buyMode = true;
+    let monitorSellMode = false;
 
     const websocket = new Gdax.WebsocketClient(
         [product],
@@ -94,12 +107,41 @@ function listenPrices(auth, product, maxTicks = 10, mode = 'json') {
         }
     );
 
-    websocket.on('message', data => {
+    websocket.on('message', async (data) => {
         if(data.type === 'ticker') {
-            count = count + 1;
-            output(mode, data)
-            if( count === maxTicks ) {
-                process.exit();
+            if(buyMode) {
+                console.log(`Found Entry Price, submitting order at ${entryTradeParams.price}`);
+                buyOrderId = await client.placeOrder(entryTradeParams);
+                output('table', [buyOrderId]);
+                buyMode = false;
+            } else {
+                if(!monitorSellMode) {
+                    const buyOrder = await client.getOrder(buyOrderId.id);
+                    console.log("Verifying BUY order...");
+                    output('table', [buyOrder]);
+                    if(buyOrder.status === "rejected") {
+                        console.log("Failed to buy at params");
+                        process.exit();
+                    }
+                    if(buyOrder.settled === true) {
+                        sellOrderId = await client.placeOrder(exitTradeParams);
+                        output('json', [sellOrderId]);
+                        monitorSellMode = true;
+                    }
+
+                } else {
+                    const sellOrder = await client.getOrder(sellOrderId.id);
+                    console.log("Verifying SELL order...");
+                    output('table', [sellOrder]);
+                    if(sellOrder.status === "rejected") {
+                        monitorSellMode = false;
+                    }
+                    if(sellOrder.settled === true) {
+                        // monitor trade until it is settled and display profit
+                        console.log(`Order by id: ${sellOrder.id} complete with $${profit} USD`);
+                        process.exit();
+                    }
+                }
             }
         }
     });
@@ -210,7 +252,7 @@ module.exports = {
     listCoinbaseAccounts,
     listGdaxAccounts,
     listOrders,
-    listenPrices,
+    executeTwoLegTrade,
     cancelAllOrders,
     cancelForProduct,
     buyLimit,

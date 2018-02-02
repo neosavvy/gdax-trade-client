@@ -33,6 +33,7 @@ commander.version('0.1.0')
     .option('-l --list <type>',
         'List By Object Type',
         /^(coinbase-accounts|orders|products|gdax-accounts|positions|cost-basis)$/i)
+    .option('--ignore-usd')
 
     /**
      * In Flight Order Management
@@ -72,12 +73,14 @@ commander.version('0.1.0')
     /**
      * Daemon Mode - for basic automated trading
      */
-    .option('--daemon', 'Listen on a WebSocket and execute actions')
-    .option('--daemon-ticks <n>', 'Number of ticks to listen for', parseInt)
-    .option('-w --listen <product>',
+    .option('--execute-two-leg <product>',
         'Listen to Prices for Currency Pair',
         /^(BTC-USD|BCH-USD|ETH-USD|LTC-USD)$/,
         'BTC-USD')
+    .option('--entry-price <entryPrice>',
+        'Entry Threshold')
+    .option('--exit-price <exitPrice>',
+        'Exit Threshold ')
 	.parse(process.argv);
 
 function determineURI() {
@@ -143,7 +146,7 @@ if(commander.list) {
             gdax.listCoinbaseAccounts(authedClient, determineOutputMode());
             break;
         case "gdax-accounts":
-            gdax.listGdaxAccounts(authedClient, determineOutputMode());
+            gdax.listGdaxAccounts(authedClient, determineOutputMode(), commander.ignoreUsd);
             break;
         case "orders":
             gdax.listOrders(authedClient, determineOutputMode());
@@ -244,14 +247,48 @@ if(commander.sellLimit) {
     }
 }
 
-if(commander.daemon) {
-    const selectedProduct = commander.listen;
-    const credentials = getCredentials();
-    const ticks = commander.daemonTicks <= 0 ? 1 : commander.daemonTicks;
-    gdax.listenPrices(
-        credentials,
-        selectedProduct,
-        ticks,
-        determineOutputMode()
-    );
+if(commander.executeTwoLeg && commander.entryPrice && commander.exitPrice && commander.buySourceAmount) {
+    const product = commander.executeTwoLeg;
+    const entryPrice = Number(commander.entryPrice).toFixed(5);
+    const exitPrice = Number(commander.exitPrice).toFixed(5);
+    const buySourceAmount = commander.buySourceAmount;
+    const targetAmount = Number(buySourceAmount / entryPrice).toFixed(5);
+
+    if(entryPrice >= exitPrice) {
+        console.log("Entry must be less than Exit");
+        process.exit()
+    }
+
+    console.log(`Beginning Monitored Two Leg Trade for ${product}`);
+    console.log(`Entry [BUY] Price: ${entryPrice}`);
+    console.log(`Exit [SELL] Price: ${exitPrice}`);
+    console.log(`Trade Amount:      ${targetAmount}`);
+
+    const profit = (exitPrice * targetAmount) - (entryPrice * targetAmount);
+
+    console.log(`Successful Execution will NET $${profit} USD`);
+
+    const buyParams = {
+        side: 'buy',
+        price: entryPrice,
+        size: targetAmount,
+        product_id: product,
+        post_only: true
+    };
+
+    const sellParams = {
+        side: 'buy',
+        price: exitPrice,
+        size: targetAmount,
+        product_id: product,
+        post_only: true
+    };
+
+    gdax.executeTwoLegTrade(
+        getCredentials(),
+        getAuthenticatedClient(),
+        profit,
+        product,
+        buyParams,
+        sellParams);
 }
