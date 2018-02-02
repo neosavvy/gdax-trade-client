@@ -97,6 +97,8 @@ function executeTwoLegTrade(
     let sellOrderId;
     let buyMode = true;
     let monitorSellMode = false;
+    let orderSubmitted = false;
+    let sellOrderSubmitted = false;
 
     const websocket = new Gdax.WebsocketClient(
         [product],
@@ -109,8 +111,9 @@ function executeTwoLegTrade(
 
     websocket.on('message', async (data) => {
         if(data.type === 'ticker') {
-            if(buyMode) {
+            if(buyMode && !orderSubmitted) {
                 console.log(`Found Entry Price, submitting order at ${entryTradeParams.price}`);
+                orderSubmitted = true;
                 buyOrderId = await client.placeOrder(entryTradeParams);
                 output('table', [buyOrderId]);
                 buyMode = false;
@@ -123,9 +126,10 @@ function executeTwoLegTrade(
                         console.log("Failed to buy at params");
                         process.exit();
                     }
-                    if(buyOrder.settled === true) {
+                    if(buyOrder.settled === true && !sellOrderSubmitted) {
+                        sellOrderSubmitted = true;
                         sellOrderId = await client.placeOrder(exitTradeParams);
-                        output('json', [sellOrderId]);
+                        output('table', [sellOrderId]);
                         monitorSellMode = true;
                     }
 
@@ -135,6 +139,7 @@ function executeTwoLegTrade(
                     output('table', [sellOrder]);
                     if(sellOrder.status === "rejected") {
                         monitorSellMode = false;
+                        sellOrderSubmitted = false;
                     }
                     if(sellOrder.settled === true) {
                         // monitor trade until it is settled and display profit

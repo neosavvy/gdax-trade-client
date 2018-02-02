@@ -45,6 +45,9 @@ commander.version('0.1.0')
     /**
      * Trading Interface
      */
+    .option('-q --quote <product>',
+        'Get Price Quote for a Product',
+        /^(BTC-USD|BCH-USD|ETH-USD|LTC-USD|ALL)/i)
     .option('--buy-limit <symbol>',
         'Buy or Sell a Currency Pair as Limit Order',
         /^(BTC-USD|BCH-USD|ETH-USD|LTC-USD)/i)
@@ -277,7 +280,7 @@ if(commander.executeTwoLeg && commander.entryPrice && commander.exitPrice && com
     };
 
     const sellParams = {
-        side: 'buy',
+        side: 'sell',
         price: exitPrice,
         size: targetAmount,
         product_id: product,
