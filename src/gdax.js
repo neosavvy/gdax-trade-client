@@ -120,11 +120,11 @@ function executeTwoLegTrade(
             } else {
                 if(!monitorSellMode) {
                     const buyOrder = await client.getOrder(buyOrderId.id);
-                    console.log("Verifying BUY order...");
-                    output('table', [buyOrder]);
+                    // console.log("Verifying BUY order...");
+                    // output('table', [buyOrder]);
                     if(buyOrder.status === "rejected") {
                         console.log("Failed to buy at params");
-                        process.exit();
+                        // process.exit();
                     }
                     if(buyOrder.settled === true && !sellOrderSubmitted) {
                         sellOrderSubmitted = true;
@@ -132,11 +132,10 @@ function executeTwoLegTrade(
                         output('table', [sellOrderId]);
                         monitorSellMode = true;
                     }
-
                 } else {
                     const sellOrder = await client.getOrder(sellOrderId.id);
-                    console.log("Verifying SELL order...");
-                    output('table', [sellOrder]);
+                    // console.log("Verifying SELL order...");
+                    // output('table', [sellOrder]);
                     if(sellOrder.status === "rejected") {
                         monitorSellMode = false;
                         sellOrderSubmitted = false;
@@ -144,7 +143,7 @@ function executeTwoLegTrade(
                     if(sellOrder.settled === true) {
                         // monitor trade until it is settled and display profit
                         console.log(`Order by id: ${sellOrder.id} complete with $${profit} USD`);
-                        process.exit();
+                        // process.exit();
                     }
                 }
             }
@@ -171,7 +170,7 @@ async function cancelAllOrders(client, mode = 'json') {
 
 async function cancelForProduct(client, product, mode = 'json') {
     try {
-        const cancelled = await client.cancelAllOrders({ product_id: product });
+        const cancelled = await client.cancelAllOrders({ product_id: product }, _.noop);
         output(mode, cancelled);
     } catch (error) {
         console.log(error);
@@ -187,7 +186,7 @@ async function placeOrderWrapper(client, product, amount, limitPrice, side, mode
         post_only: true
     };
     const orderConfirmation = await client.placeOrder(params);
-    output(mode, orderConfirmation);
+    output(mode, [orderConfirmation]);
     return orderConfirmation;
 }
 
@@ -253,6 +252,7 @@ async function listCostBasis(client, mode = 'json') {
 }
 
 module.exports = {
+    output,
     listProducts,
     listCoinbaseAccounts,
     listGdaxAccounts,
