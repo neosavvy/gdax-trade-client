@@ -8,7 +8,10 @@
     "commander": "^2.14.1",
     "easy-table": "^1.1.1",
     "gdax": "^0.5.1",
-    "lodash": "^4.17.5"
+    "lodash": "^4.17.5",
+    "moment": "^2.20.1",
+    "pg": "^7.4.1",
+    "twix": "^1.2.1"
   },
   "devDependencies": {
     "babel-core": "^6.26.0",
@@ -31,6 +34,7 @@
   },
   "homepage": "https://github.com/neosavvyinc/gdax-trade-client#readme",
   "bin": {
-    "gtrade": "./src/index.js"
+    "gtrade": "./src/trade.js",
+    "gmon": "./src/monitor.cmd.js"
   }
 }

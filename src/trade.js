@@ -1,19 +1,11 @@
 #!/usr/bin/env node
-
 const commander = require('commander');
 
-const fs = require('fs');
 const gdax = require('./gdax');
-const Gdax = require('gdax');
-const ExtendedClient = require('./authenticated');
 const math = require('./math');
 const _ = require('lodash');
 
-const apiURI = 'https://api.gdax.com';
-const sandboxURI = 'https://api-public.sandbox.gdax.com';
-
-const wsApiURI = 'wss://ws-feed.gdax.com';
-const sandboxWsApiURI = 'wss://ws-feed.sandbox.gdax.com';
+const AuthUtils = require('./authentication.util');
 
 commander.version('0.1.0')
     /**
@@ -25,10 +17,6 @@ commander.version('0.1.0')
      * Authentication
      */
     .option('-f --auth-file [authFile]', 'Authentication File with key, secret and passphrase')
-
-    .option('-k --key [key]', 'Authentication Key from GDAX')
-	.option('-s --secret [secret]', 'Authentication Secret from GDAX')
-	.option('-p --passphrase [passphrase]', 'Authentication Passphrase from GDAX')
 
     /**
      * Public API Functions
@@ -87,12 +75,13 @@ commander.version('0.1.0')
         'Entry Threshold')
     .option('--exit-price <exitPrice>',
         'Exit Threshold ')
+    .option('--lower-bound <lowerBound>',
+        'Lower Bound Threshold ')
+    .option('--upper-bound <upperBound>',
+        'Upper Bound ')
     .option('--logarithmic-steps <steps>', 'Scale logarithmically this number of times', 1)
 	.parse(process.argv);
 
-function determineURI() {
-    return commander.real ? apiURI : sandboxURI;
-}
 
 function determineOutputMode() {
     if(commander.table) {
@@ -104,58 +93,8 @@ function determineOutputMode() {
     }
 }
 
-function getAuthenticatedClient(base = false) {
-    const credentials = getCredentials();
-    if(credentials.key && credentials.secret && credentials.passphrase) {
-        if(base) {
-            return new Gdax.AuthenticatedClient(
-                credentials.key,
-                credentials.secret,
-                credentials.passphrase,
-                determineURI()
-            );
-        } else {
-            return new ExtendedClient(
-                credentials.key,
-                credentials.secret,
-                credentials.passphrase,
-                determineURI()
-            );
-        }
-    } else {
-        console.log("You must provide an auth-file or key, secret, and passphrase parameters");
-        commander.help();
-        process.exit(1)
-    }
-}
 
-function getCredentials() {
-    if(commander.key && commander.secret && commander.passphrase) {
-        return {
-            "key": commander.key,
-            "secret": commander.secret,
-            "passphrase": commander.passphrase
-        };
-    } else if(commander.authFile) {
-        try {
-            const fileContents = fs.readFileSync(commander.authFile);
-            const authFileContents = JSON.parse(fileContents);
-            return authFileContents;
-        } catch (error) {
-            console.log("An Error Occurred Reading the file: ", commander.authFile);
-            commander.help();
-            process.exit(1);
-        }
-    } else {
-        return {
-            "key": null,
-            "secret": null,
-            "passphrase": null
-        }
-    }
-}
-
-const authedClient = getAuthenticatedClient();
+const authedClient = AuthUtils.getAuthenticatedClient(false, commander.real, commander.authFile);
 if(commander.list) {
     switch (commander.list) {
         case "coinbase-accounts":
@@ -184,13 +123,20 @@ if(commander.cancel) {
     let currencyPair = commander.cancel;
     switch(currencyPair) {
         case "ALL":
-            gdax.cancelAllOrders(getAuthenticatedClient(true), determineOutputMode());
+            gdax.cancelAllOrders(
+                AuthUtils.getAuthenticatedClient(true, commander.real, commander.authFile),
+                determineOutputMode()
+            );
             break;
         case "BTC-USD":
         case "BCH-USD":
         case "ETH-USD":
         case "LTC-USD":
-            gdax.cancelForProduct(getAuthenticatedClient(true), currencyPair, determineOutputMode());
+            gdax.cancelForProduct(
+                AuthUtils.getAuthenticatedClient(true, commander.real, commander.authFile),
+                currencyPair,
+                determineOutputMode()
+            );
             break;
         default:
             console.log("Please provide a selection");
@@ -277,9 +223,11 @@ if(
     const buySourceAmount = commander.buySourceAmount;
     const entryPrice = Number(commander.entryPrice).toFixed(5);
     const exitPrice = Number(commander.exitPrice).toFixed(5);
+    const lowerBound = commander.lowerBound ? Number(commander.lowerBound) : 0.9775;
+    const upperBound = commander.upperBound ? Number(commander.upperBound) : 1.005;
 
-    const buyPrices = math.calculatePricesForScale(Number(entryPrice), Number(entryPrice) * 0.9775, logScale, math.log10Form);
-    const sellPrices = math.calculatePricesForScale(Number(exitPrice), Number(exitPrice) * 1.005, logScale, math.log10Form);
+    const buyPrices = math.calculatePricesForScale(Number(entryPrice), Number(entryPrice) * lowerBound, logScale, math.log10Form);
+    const sellPrices = math.calculatePricesForScale(Number(exitPrice), Number(exitPrice) * upperBound, logScale, math.log10Form);
 
     const buyParams = {
         side: 'buy',
@@ -312,8 +260,8 @@ if(
         const profit = (pair.sell.price * pair.sell.size) - (pair.buy.price * pair.buy.size);
         console.log("Profit for order: ", profit);
         const trade = gdax.executeTwoLegTrade(
-            getCredentials(),
-            getAuthenticatedClient(),
+            AuthUtils.getCredentials(commander.authFile),
+            AuthUtils.getAuthenticatedClient(false, commander.real, commander.authFile),
             profit,
             product,
             pair.buy,
