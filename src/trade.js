@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 const commander = require('commander');
 
-const gdax = require('./gdax');
-const math = require('./math');
+const gdax = require('./api/gdax');
+const math = require('./util/math');
 const _ = require('lodash');
 
-const AuthUtils = require('./authentication.util');
+const AuthUtils = require('./util/authentication.util');
 
 commander.version('0.1.0')
     /**

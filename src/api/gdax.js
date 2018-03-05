@@ -4,7 +4,7 @@ const _ = require('lodash');
 const Aigle = require('aigle');
 Aigle.mixin(_);
 
-const { output } = require('./logging.util');
+const { output } = require('../util/logging.util');
 
 async function listProducts(client, mode = 'json') {
     try {
@@ -80,52 +80,50 @@ function executeTwoLegTrade(
     );
 
     websocket.on('message', async (data) => {
-        if(data.type === 'ticker') {
-            if(buyMode && !orderSubmitted) {
-                console.log(`Found Entry Price, submitting order at ${entryTradeParams.price}`);
-                orderSubmitted = true;
-                buyOrderId = await client.placeOrder(entryTradeParams);
-                output('table', [buyOrderId]);
-                buyMode = false;
-            } else {
-                if(!monitorSellMode) {
-                    const buyOrder = await client.getOrder(buyOrderId.id);
-                    // console.log("Verifying BUY order...");
-                    // output('table', [buyOrder]);
-                    if(buyOrder.status === "rejected") {
-                        console.log("Failed to buy at params");
-                        // process.exit();
-                    }
-                    if(buyOrder.settled === true && !sellOrderSubmitted) {
-                        sellOrderSubmitted = true;
-                        sellOrderId = await client.placeOrder(exitTradeParams);
-                        output('table', [sellOrderId]);
-                        monitorSellMode = true;
-                    }
+        try {
+            if(data.type === 'ticker') {
+                if(buyMode && !orderSubmitted) {
+                    console.log(`Found Entry Price, submitting order at ${entryTradeParams.price}`);
+                    orderSubmitted = true;
+                    buyOrderId = await client.placeOrder(entryTradeParams);
+                    output('table', [buyOrderId]);
+                    buyMode = false;
                 } else {
-                    const sellOrder = await client.getOrder(sellOrderId.id);
-                    // console.log("Verifying SELL order...");
-                    // output('table', [sellOrder]);
-                    if(sellOrder.status === "rejected") {
-                        monitorSellMode = false;
-                        sellOrderSubmitted = false;
-                    }
-                    if(sellOrder.settled === true) {
-                        // monitor trade until it is settled and display profit
-                        console.log(`Order by id: ${sellOrder.id} complete with $${profit} USD`);
-                        // process.exit();
+                    if(!monitorSellMode) {
+                        const buyOrder = await client.getOrder(buyOrderId.id);
+                        if(buyOrder.status === "rejected") {
+                            console.log("Failed to buy at params");
+                        }
+                        if(buyOrder.settled === true && !sellOrderSubmitted) {
+                            sellOrderSubmitted = true;
+                            sellOrderId = await client.placeOrder(exitTradeParams);
+                            output('table', [sellOrderId]);
+                            monitorSellMode = true;
+                        }
+                    } else {
+                        const sellOrder = await client.getOrder(sellOrderId.id);
+                        if(sellOrder.status === "rejected") {
+                            monitorSellMode = false;
+                            sellOrderSubmitted = false;
+                        }
+                        if(sellOrder.settled === true) {
+                            console.log(`Order by id: ${sellOrder.id} complete with $${profit} USD`);
+                        }
                     }
                 }
             }
+        } catch (error) {
+            console.log("Error while obtaining order details on a ticker update: ", error);
         }
     });
 
     websocket.on('error', err => {
-            console.log(err);
+            console.log("There was an error on the websocket", err);
     });
 
     websocket.on('close', () => {
-        // possibly kill all outstanding orders
+        console.log("Websocket was closed, no longer monitoring orders");
+        // May want to notify via text that we are no longer observing price ticks and order state
     });
 }
 

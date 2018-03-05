@@ -3,19 +3,19 @@
 const commander = require('commander');
 
 const fs = require('fs');
-const gdax = require('./gdax');
-const MetricsDAO = require('./metrics_data.dao');
+const gdax = require('./api/gdax');
+const MetricsDAO = require('./dataAccess/metrics_data.dao');
 const Gdax = require('gdax');
-const ExtendedClient = require('./authenticated');
-const math = require('./math');
+const ExtendedClient = require('./util/authenticated');
+const math = require('./util/math');
 const _ = require('lodash');
 
 const {
     PRODUCT_ID_REGEX
-} = require('./constants');
+} = require('./util/constants');
 
-const AuthUtils = require('./authentication.util');
-const { output } = require('./logging.util');
+const AuthUtils = require('./util/authentication.util');
+const { output } = require('./util/logging.util');
 
     commander.version('0.1.0')
 

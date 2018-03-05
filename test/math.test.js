@@ -5,7 +5,7 @@ import {
     calculateLinearScale,
     calculatePricesForScale,
     log10Form
-} from "../src/math";
+} from "../src/util/math";
 
 describe('math', () => {
 

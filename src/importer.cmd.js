@@ -4,7 +4,7 @@ const commander = require('commander');
 
 const request = require('request');
 
-const MetricsDAO = require('./metrics_data.dao');
+const MetricsDAO = require('./dataAccess/metrics_data.dao');
 
 const _ = require('lodash');
 const moment = require('moment');
@@ -12,10 +12,10 @@ const twix = require('twix');
 
 const {
     PRODUCT_ID_REGEX
-} = require('./constants');
+} = require('./util/constants');
 
-const AuthUtils = require('./authentication.util');
-const { output } = require('./logging.util');
+const AuthUtils = require('./util/authentication.util');
+const { output } = require('./util/logging.util');
 
 commander.version('0.1.0')
 
