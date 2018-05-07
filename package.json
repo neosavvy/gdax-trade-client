@@ -8,9 +8,10 @@
     "aws-sdk": "^2.207.0",
     "commander": "^2.14.1",
     "easy-table": "^1.1.1",
-    "gdax": "^0.5.1",
+    "gdax": "^0.7.0",
     "lodash": "^4.17.5",
     "moment": "^2.20.1",
+    "node.bittrex.api": "^1.0.0",
     "pg": "^7.4.1",
     "twix": "^1.2.1"
   },
