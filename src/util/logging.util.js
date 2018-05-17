@@ -6,7 +6,7 @@ function output(mode, data, sumColumn, omitColumns) {
         return;
     }
     if(mode === 'json') {
-        _.forEach(data, (d) => console.log(JSON.stringify(d, null, 4)));
+        _.forEach(data, (d) => console.log(JSON.stringify(d, null, 4), ','));
     } else {
         const t = new Table();
         _(data)

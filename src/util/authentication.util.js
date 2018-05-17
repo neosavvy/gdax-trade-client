@@ -32,7 +32,7 @@ function getAuthenticatedWebSocket(real = false, authedClient, product) {
         determineWsURI(real),
         authedClient,
         {
-            channels: ['ticker']
+            channels: ['matches']
         }
     );
 }
