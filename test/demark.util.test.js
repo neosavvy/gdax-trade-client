@@ -51,7 +51,7 @@ describe('demark', () => {
         });
     });
 
-    describe.only('updateHistoryWithCounts', function() {
+    describe('updateHistoryWithCounts', function() {
         it('should update the full history with current counts of bullish calls', () => {
             const history = findRecentCombinedBullishAndBearishCandles(data);
             // output('table', _.first(_.chunk(history, 30)));

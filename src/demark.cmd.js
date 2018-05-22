@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const commander = require('commander');
-const colors = require('colors');
+
 const moment = require('moment');
 const { fork } = require('child_process');
 
@@ -21,6 +21,11 @@ const {
     findRecentCombinedBullishAndBearishCandles,
     updateHistoryWithCounts
 } = require('./util/demark.util');
+
+const {
+    initialCandleTimer,
+    calculateInitialTimeoutForCandleSize
+} = require('./util/candle_timer.utils');
 
 commander.version(pjson.version)
 
@@ -53,30 +58,6 @@ commander.version(pjson.version)
 
 
 let timeout = null;
-function initialCandleTimer(initialTimeout, candleTimeout, dataGatherer){
-    console.log("Initial Timeout: ", initialTimeout);
-    console.log("Initial Timeout: ", candleTimeout);
-
-    const thisCandle = new moment().utc().startOf('minute');
-    timeout = setTimeout(() => {
-        console.log("Data Ending for Initial Candle, sending notification", thisCandle.toISOString());
-        dataGatherer.send({ type: 'candleEnded', candleMoment: thisCandle });
-        configureCandleTimer(candleTimeout, dataGatherer);
-    }, initialTimeout);
-}
-
-function configureCandleTimer(candleTimeout, dataGatherer) {
-    // set a timer based on granularity
-    // upon expired timer send message to data gather to push data as a candle onto cached candles
-    // reset / restart timer
-    const thisCandle = new moment().utc().startOf('minute');
-    clearTimeout(timeout);
-    timeout = setTimeout(() => {
-        console.log("Data Ending for Candle, sending notification", thisCandle.toISOString());
-        dataGatherer.send({ type: 'candleEnded', candleMoment: thisCandle });
-        configureCandleTimer(candleTimeout, dataGatherer);
-    }, candleTimeout);
-}
 
 if(commander.monitor && commander.candleSize) {
     const product = commander.monitor;
@@ -86,10 +67,10 @@ if(commander.monitor && commander.candleSize) {
     const candleTimeout = gdax.determineGranularityMillis(commander.candleSize);
 
     // instantiate a forked data gatherer that just holds on to data cached from websocket messages
-    // const dataGatherer = fork(__dirname + '/data_gatherer.proc.js', [], {
-    //     execArgv: ['--inspect-brk=9229']
-    // });
-    const dataGatherer = fork(__dirname + '/data_gatherer.proc.js');
+    const dataGatherer = fork(__dirname + '/data_gatherer.proc.js', [], {
+        execArgv: ['--inspect=9230']
+    });
+    // const dataGatherer = fork(__dirname + '/data_gatherer.proc.js');
     gdax.listHistoricRates(
         authedClient,
         determineOutputMode(commander),
@@ -107,6 +88,7 @@ if(commander.monitor && commander.candleSize) {
                 }
             });
 
+            // TODO: Augmented single call here should return combined objects
             const combined = updateHistoryWithCounts(
                 findRecentCombinedBullishAndBearishCandles(rateObjs)
             );
@@ -114,16 +96,8 @@ if(commander.monitor && commander.candleSize) {
             dataGatherer.send({ type: 'historicCandles', payload: combined });
 
 
-            // this minute
-            const thisCandle = new moment();
-
-            // next minute
-            const nextMinute = new moment();
-            nextMinute.add(1, 'm').startOf('minute');
-
-            // millis until next minute = next-minute - now
-            const initialTimeout = moment.duration(nextMinute.diff(thisCandle)).as('milliseconds');
-            initialCandleTimer(initialTimeout, candleTimeout, dataGatherer);
+            const initialTimeout = calculateInitialTimeoutForCandleSize(commander.candleSize);
+            timeout = initialCandleTimer(initialTimeout, candleTimeout, dataGatherer);
             websocket.on('message', (data) => {
                 if(data.type === 'match'){
                     dataGatherer.send({ type: 'rawCandle', payload: data });
