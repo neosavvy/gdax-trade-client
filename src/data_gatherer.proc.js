@@ -7,12 +7,7 @@ let processingRawData = [];
 
 const {
     findRecentCombinedBullishAndBearishCandles,
-    updateHistoryWithCounts,
-    isCandleBearish,
-    isCandleBullish,
-    isHistoryBearish,
-    isHistoryBullish,
-    calculateCount
+    updateHistoryWithCounts
 } = require('./util/demark.util');
 
 const { output } = require('./util/logging.util');
@@ -67,16 +62,13 @@ process.on('message', async (message) => {
                 if(message.payload) {
                     historicCandles = historicCandles.concat(_.first(_.chunk(message.payload, 100)));
                     console.log("Historic Data Received");
-                    // output('table', historicCandles);
                     output('table', _.first(_.chunk(historicCandles, 20)), undefined, ['low', 'open', 'high']);
-
                 }
                 break;
             }
             case "rawCandle": {
                 if (message.payload) {
                     rawCandleData = rawCandleData.concat(message.payload);
-                    //console.log("Raw Candle Received", message.payload);
                 }
                 break;
             }
