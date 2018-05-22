@@ -164,7 +164,7 @@ function findRecentCombinedBullishAndBearishCandles(candles) {
             return acc.concat(updatedCandle);
         }
         else {
-            return acc;
+            return acc.concat(currentCandle);
         }
     }, []);
 }

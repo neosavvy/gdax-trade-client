@@ -12,6 +12,7 @@
     "gdax": "^0.7.0",
     "lodash": "^4.17.5",
     "moment": "^2.22.1",
+    "moment-round": "^1.0.1",
     "node.bittrex.api": "^1.0.0",
     "pg": "^7.4.1",
     "twix": "^1.2.1"
