@@ -5,6 +5,7 @@ const Aigle = require('aigle');
 Aigle.mixin(_);
 
 const { output } = require('../util/logging.util');
+const { CANDLE_TO_MILLIS_MAP, CANDLE_TO_SECONDS_MAP } = require('../util/constants');
 
 async function listProducts(client, mode = 'json') {
     try {
@@ -228,6 +229,19 @@ async function listHistoricRates(client, mode = 'json', product, params) {
     }
 }
 
+function determineGranularity(candleSize) {
+    let d = new Date();
+    const granularity = {
+        'start': (new Date(d.getTime() - 1000 * 60 * 50)).toISOString(),
+        'end': d.toISOString(),
+        'granularity': CANDLE_TO_SECONDS_MAP[candleSize]
+    };
+    return granularity;
+}
+
+function determineGranularityMillis(candleSize) {
+    return CANDLE_TO_MILLIS_MAP[candleSize]
+}
 
 /**
  * Test Code
@@ -386,5 +400,7 @@ module.exports = {
     depositAll,
     listAllAccounts,
     listFills,
-    listHistoricRates
+    listHistoricRates,
+    determineGranularity,
+    determineGranularityMillis
 };

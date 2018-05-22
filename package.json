@@ -26,7 +26,8 @@
   },
   "scripts": {
     "test": "npx mocha --require babel-core/register test/**/*.test.js",
-    "test:debug": "npx mocha --inspect-brk --require babel-core/register test/**/*.test.js"
+    "test:debug": "npx mocha --inspect-brk --require babel-core/register test/**/*.test.js",
+    "update:test:data": "echo 'export const data = ' > test/demark.data.js; gdemark -f adam_parrish.json -r --table -t BTC-USD -c 1m --dump >> test/demark.data.1m.js"
   },
   "repository": {
     "type": "git",
