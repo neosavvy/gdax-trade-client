@@ -217,6 +217,7 @@ if(commander.scaleIn) {
         console.log("With Entry Price: ", commander.entryPrice);
 
         const amountLadder = math.calculateMartingalePriceLadder(commander.buySourceAmount, logarithmicSteps);
+        console.log("Amounts: ", amountLadder);
 
         // compute the linear or logarithmic price scale downward
         const buyPrices = math.calculatePricesForScale(Number(entryPrice), Number(entryPrice) * lowerBound, logScale, math.log10Form);

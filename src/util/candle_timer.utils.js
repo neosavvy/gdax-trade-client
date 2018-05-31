@@ -61,7 +61,31 @@ function calculateInitialTimeoutForCandleSize(candleSize, thisCandle = new momen
     }
 }
 
+function calculateBeginningOfCandle(candleSize, candleTime) {
+    switch( candleSize ) {
+        case "1m":
+            const minute = new moment(candleTime).utc();
+            return minute.floor(1, 'minutes');
+        case "5m":
+            const minute5 = new moment(candleTime).utc();
+            return minute5.floor(5, 'minutes');
+        case "15m":
+            const minute15 = new moment(candleTime).utc();
+            return minute15.floor(15, 'minutes');
+        case "1h":
+            const hour = new moment(candleTime).utc();
+            return hour.floor(1, 'hours');
+        case "6h":
+            const hour6 = new moment(candleTime).utc();
+            return hour6.floor(6, 'hours');
+        case "1d":
+            const day1 = new moment(candleTime).utc();
+            return day1.startOf('day');
+    }
+}
+
 module.exports = {
     initialCandleTimer,
-    calculateInitialTimeoutForCandleSize
+    calculateInitialTimeoutForCandleSize,
+    calculateBeginningOfCandle
 };

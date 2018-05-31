@@ -59,35 +59,35 @@ commander.version(pjson.version)
 
 let timeout = null;
 
-const handleReconnect = (data) => {
-    output('table', [data]);
-
-    // try to re-connect the first time...
-    websocket.connect();
-
-    let count = 1;
-    // attempt to re-connect every 30 seconds.
-    // TODO: maybe use an exponential backoff instead
-    const interval = setInterval(() => {
-        if (!websocket.socket) {
-            count++;
-
-            if (count % 30 === 0) {
-                const time_since = 30 * count;
-                console.log('Websocket Error', `Attempting to re-connect for the ${count} time. It has been ${time_since} seconds since we lost connection.`);
-            }
-            websocket.connect();
-        }
-        else {
-            clearInterval(interval);
-        }
-    }, 30000);
-};
-
 if(commander.monitor && commander.candleSize) {
     const product = commander.monitor;
     const authedClient = AuthUtils.getAuthenticatedClient(false, commander.real, commander.authFile);
     const websocket = AuthUtils.getAuthenticatedWebSocket(commander.real, authedClient, product);
+    const handleReconnect = (data) => {
+        output('table', [data]);
+
+        // try to re-connect the first time...
+        websocket.connect();
+
+        let count = 1;
+        // attempt to re-connect every 30 seconds.
+        // TODO: maybe use an exponential backoff instead
+        const interval = setInterval(() => {
+            if (!websocket.socket) {
+                count++;
+
+                if (count % 30 === 0) {
+                    const time_since = 30 * count;
+                    console.log('Websocket Error', `Attempting to re-connect for the ${count} time. It has been ${time_since} seconds since we lost connection.`);
+                }
+                websocket.connect();
+            }
+            else {
+                clearInterval(interval);
+            }
+        }, 30000);
+    };
+
     const granularity = gdax.determineGranularity(commander.candleSize);
     const candleTimeout = gdax.determineGranularityMillis(commander.candleSize);
 
@@ -126,7 +126,11 @@ if(commander.monitor && commander.candleSize) {
 
             websocket.on('message', (data) => {
                 if(data.type === 'match'){
-                    dataGatherer.send({ type: 'rawCandle', payload: data });
+                    dataGatherer.send({
+                        type: 'rawCandle',
+                        payload: data,
+                        candleSize: commander.candleSize
+                    });
                 }
             });
 
