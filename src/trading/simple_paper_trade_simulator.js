@@ -4,10 +4,7 @@ const moment = require('moment');
 
 
 let realtimeHistory = [];
-let openPositions = [{ symbol: 'BTC-USD',
-    action: 'buy',
-    amount: 1,
-    price: '7545.96000000' }];
+let openPositions = [];
 let orders = [];
 
 const position = {
@@ -70,6 +67,15 @@ const analyze = (currentCandle, history, positions) => {
         }
     }
 
+    else if( hasLongPosition(positions) && shouldLong(currentCandle, history, positions) ) {
+        return {
+            symbol: 'BTC-USD',
+            action: 'buy',
+            amount: _.sumBy(positions, 'amount') * 2,
+            price: currentCandle.price
+        }
+    }
+
     else if(
         hasLongPosition(positions) &&
         shouldShort(currentCandle, history, positions) &&
@@ -77,6 +83,11 @@ const analyze = (currentCandle, history, positions) => {
     ) {
         console.log("Current Candle Price: ", currentCandle.price);
         console.log("Postion Price:        ", positions[0].price);
+
+        // determine the best price to try to sell
+        // option 1: the max of the previous run up candles (ie if on a 4 count the high of candle 1-4)
+        // option 2: the max of 13, 26, 50 or 100 period moving average
+
         return {
             symbol: 'BTC-USD',
             action: 'sell',
@@ -103,6 +114,10 @@ const trade = (analysis, positions) => {
             if( !hasLongPosition(positions) )
             {
                 console.log('Buying...', analysis);
+
+                // consider saving the price as 1.0050 to account for the fee when concatenating the postion
+                // save it as _.merge({}, analysis, { actualCost: analysis * 1.0050 })
+
                 fs.appendFileSync('trades.csv',`${now},${analysis.action},${analysis.symbol},${analysis.amount},${-1 * analysis.price}\n`);
                 return [analysis].concat(positions);
             } else {
@@ -119,6 +134,14 @@ const trade = (analysis, positions) => {
             }
         default:
             console.log("Not a trading opportunity");
+
+            // if hasLongPosition is true
+            // and price has crossed below the low of the 9 candles that represented the buy in
+            // make a decision
+            // option 1: martingale if it is a continuation count of the 9 candles used to buy in (ie 10,11,12,13 and so on)
+            // option 2: place a limit order to sell at the low of the 9 candles used to buy in
+            // (implied that we save a collection to the position for the 9 candles used for the buy in)
+
             return positions || [];
     }
 };
