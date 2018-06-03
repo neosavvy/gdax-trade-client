@@ -5,13 +5,6 @@ const moment = require('moment');
 
 let realtimeHistory = [];
 let openPositions = [];
-let orders = [];
-
-const position = {
-    symbol: 'BTC-USD',
-    amount: 1.0031,
-    costBasis: 7302.02
-};
 
 const hasLongPosition = (positions) => {
     const sum = _.sumBy(positions, 'amount');
@@ -79,10 +72,10 @@ const analyze = (currentCandle, history, positions) => {
     else if(
         hasLongPosition(positions) &&
         shouldShort(currentCandle, history, positions) &&
-        parseFloat(currentCandle.price) > parseFloat(positions[0].price)
+        parseFloat(currentCandle.price) > parseFloat(positions[0].costBasis) * 1.001
     ) {
         console.log("Current Candle Price: ", currentCandle.price);
-        console.log("Postion Price:        ", positions[0].price);
+        console.log("Position Price:        ", positions[0].price);
 
         // determine the best price to try to sell
         // option 1: the max of the previous run up candles (ie if on a 4 count the high of candle 1-4)
@@ -114,12 +107,10 @@ const trade = (analysis, positions) => {
             if( !hasLongPosition(positions) )
             {
                 console.log('Buying...', analysis);
-
                 // consider saving the price as 1.0050 to account for the fee when concatenating the postion
-                // save it as _.merge({}, analysis, { actualCost: analysis * 1.0050 })
-
-                fs.appendFileSync('trades.csv',`${now},${analysis.action},${analysis.symbol},${analysis.amount},${-1 * analysis.price}\n`);
-                return [analysis].concat(positions);
+                const updated = _.merge({}, analysis, { costBasis: parseFloat(analysis.price) * 1.0050 });
+                fs.appendFileSync('trades.csv',`${now},${analysis.action},${analysis.symbol},${analysis.amount},${-1 * analysis.price},${-1 * updated.costBasis}\n`);
+                return [updated].concat(positions);
             } else {
                 return positions || [];
             }
@@ -127,7 +118,7 @@ const trade = (analysis, positions) => {
             if( hasLongPosition(positions) )
             {
                 console.log('Selling...', analysis);
-                fs.appendFileSync('trades.csv',`${now},${analysis.action},${analysis.symbol},${analysis.amount},${analysis.price}\n`);
+                fs.appendFileSync('trades.csv',`${now},${analysis.action},${analysis.symbol},${analysis.amount},${analysis.price},${analysis.price}\n`);
                 return _.tail(positions) || [];
             } else {
                 return positions || [];
